@@ -33,3 +33,19 @@ variable "vpc_cidr" {
   default = "10.0.0.0/16"
   
 }
+
+variable "jenkins_role_name" {
+  type    = string
+  default = "jenkins-ec2-role"
+}
+
+variable "jenkins_instance_profile_name" {
+  type    = string
+  default = "jenkins-profile"
+}
+
+# If Jenkins runs on EC2 inside your VPC, pass its security group id.
+variable "jenkins_security_group_id" {
+  type = string
+}
+
