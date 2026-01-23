@@ -26,12 +26,12 @@ variable "node_name_pattern" {
   description = "Pattern for naming EKS worker nodes"
   type        = string
   default     = "EKS-App-Worker Node"
-} 
+}
 
 variable "vpc_cidr" {
-  type = string
+  type    = string
   default = "10.0.0.0/16"
-  
+
 }
 
 variable "jenkins_role_name" {

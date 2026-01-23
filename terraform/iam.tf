@@ -64,7 +64,7 @@ resource "aws_iam_role_policy_attachment" "eks_vpc_cni_policy" {
 resource "aws_iam_role_policy_attachment" "eks_ssm_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   role       = aws_iam_role.eks_node_group.name
-} 
+}
 
 # Extra ECR pull permissions (fixes stale image cache issue)
 resource "aws_iam_role_policy" "ecr_pull_full_access" {

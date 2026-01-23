@@ -22,9 +22,9 @@ resource "aws_instance" "jenkins_master" {
   vpc_security_group_ids = [aws_security_group.jenkins_master.id]
   key_name               = "prod"
 
-  iam_instance_profile = aws_iam_instance_profile.jenkins.name 
+  iam_instance_profile = aws_iam_instance_profile.jenkins.name
 
-  associate_public_ip_address = true  # ✅ This enables SSH from outside
+  associate_public_ip_address = true # ✅ This enables SSH from outside
 
   root_block_device {
     volume_size = 20
@@ -34,7 +34,7 @@ resource "aws_instance" "jenkins_master" {
   tags = {
     Name = "jenkins-master"
   }
-} 
+}
 
 resource "aws_eks_access_entry" "jenkins" {
   cluster_name  = aws_eks_cluster.main.name
@@ -78,10 +78,10 @@ resource "aws_iam_instance_profile" "jenkins" {
 
 resource "aws_iam_role_policy_attachment" "jenkins_ecr_power" {
   role       = aws_iam_role.jenkins_ec2.name
-  policy_arn  = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
 }
 resource "aws_iam_role_policy_attachment" "jenkins_eks_describe" {
-  role      = aws_iam_role.jenkins_ec2.name
+  role       = aws_iam_role.jenkins_ec2.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
