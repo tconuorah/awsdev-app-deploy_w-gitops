@@ -197,8 +197,16 @@ resource "aws_eks_node_group" "main" {
   }
 }
 
+
+resource "aws_iam_service_linked_role" "elb" {
+  aws_service_name = "elasticloadbalancing.amazonaws.com"
+}
+
+
 # Application Load Balancer
 resource "aws_lb" "eks" {
+  depends_on = [aws_iam_service_linked_role.elb]
+
   name               = "${var.cluster_name}-alb"
   internal           = false
   load_balancer_type = "application"
