@@ -22,6 +22,8 @@ resource "aws_instance" "jenkins_master" {
   vpc_security_group_ids = [aws_security_group.jenkins_master.id]
   key_name               = "prod"
 
+  iam_instance_profile = aws_iam_instance_profile.jenkins.name 
+
   associate_public_ip_address = true  # ✅ This enables SSH from outside
 
   root_block_device {
@@ -33,6 +35,25 @@ resource "aws_instance" "jenkins_master" {
     Name = "jenkins-master"
   }
 } 
+
+resource "aws_eks_access_entry" "jenkins" {
+  cluster_name  = aws_eks_cluster.main.name
+  principal_arn = aws_iam_role.jenkins_ec2.arn
+  type          = "STANDARD"
+}
+
+
+resource "aws_security_group_rule" "eks_allow_jenkins" {
+  type                     = "ingress"
+  security_group_id        = aws_security_group.eks_cluster.id
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.jenkins_master.id
+
+  description = "Allow Jenkins EC2 to access EKS API server"
+}
+
 
 resource "aws_iam_role" "jenkins_ec2" {
   name = var.jenkins_role_name
