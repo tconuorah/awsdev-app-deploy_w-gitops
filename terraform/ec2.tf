@@ -43,6 +43,7 @@ resource "aws_eks_access_entry" "jenkins" {
 }
 
 
+
 resource "aws_security_group_rule" "eks_allow_jenkins" {
   type                     = "ingress"
   security_group_id        = aws_security_group.eks_cluster.id
