@@ -109,30 +109,6 @@ resource "aws_route_table_association" "private" {
 }
 
 # Security Groups
-resource "aws_security_group" "eks_cluster" {
-  name        = "${var.cluster_name}-sg"
-  description = "Security group for EKS cluster"
-  vpc_id      = aws_vpc.main.id
-
-  ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.cluster_name}-sg"
-  }
-}
-
 resource "aws_security_group" "jenkins_master" {
   name        = "${var.cluster_name}-jenkins-master-sg"
   description = "Security group for Jenkins master node"

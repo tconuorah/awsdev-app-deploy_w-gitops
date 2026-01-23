@@ -4,6 +4,11 @@ resource "aws_eks_cluster" "main" {
   role_arn = aws_iam_role.eks_cluster.arn
   version  = "1.31"
 
+  access_config {
+    authentication_mode                         = "API"
+    bootstrap_cluster_creator_admin_permissions = true
+  }
+
   vpc_config {
     subnet_ids              = concat(aws_subnet.private[*].id, aws_subnet.public[*].id)
     security_group_ids      = [aws_security_group.eks_cluster.id]
@@ -20,18 +25,29 @@ resource "aws_eks_cluster" "main" {
   }
 }
 
-#inbound rule from jenkins server to eks control plane
-resource "aws_security_group_rule" "eks_controlplane_allow_jenkins" {
-  type                     = "ingress"
-  security_group_id        = aws_security_group.eks_cluster.id # your EKS control plane SG
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.jenkins_master.id
+resource "aws_security_group" "eks_cluster" {
+  name        = "eks-cluster-sg"
+  description = "Security group for EKS control plane"
+  vpc_id      = aws_vpc.main.id
 
+  ingress {
+    description     = "Allow Jenkins to reach EKS API"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.jenkins_master.id]
+  }
 
-  description = "Allow Jenkins EC2 to reach EKS API server (443)"
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = { Name = "eks-cluster-sg" }
 }
+
 
 
 # Security Group for EKS Worker Nodes
@@ -212,14 +228,8 @@ resource "aws_eks_node_group" "main" {
 }
 
 
-resource "aws_iam_service_linked_role" "elb" {
-  aws_service_name = "elasticloadbalancing.amazonaws.com"
-}
-
-
 # Application Load Balancer
 resource "aws_lb" "eks" {
-  depends_on = [aws_iam_service_linked_role.elb]
 
   name                       = "${var.cluster_name}-alb"
   internal                   = false
@@ -236,10 +246,11 @@ resource "aws_lb" "eks" {
 
 # Target Group for ALB
 resource "aws_lb_target_group" "eks" {
-  name     = "eks-tg"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.main.id
+  name        = "eks-tg"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.main.id
+  target_type = "instance"
 
   health_check {
     path                = "/"
@@ -248,6 +259,7 @@ resource "aws_lb_target_group" "eks" {
     unhealthy_threshold = 2
     timeout             = 5
     interval            = 30
+    matcher             = "200-399"
   }
 
   tags = {

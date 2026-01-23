@@ -20,7 +20,7 @@ resource "aws_instance" "jenkins_master" {
   instance_type          = "t3.medium"
   subnet_id              = aws_subnet.public[0].id
   vpc_security_group_ids = [aws_security_group.jenkins_master.id]
-  key_name               = "prod"
+  key_name               = "kp"
 
   iam_instance_profile = aws_iam_instance_profile.jenkins.name
 
