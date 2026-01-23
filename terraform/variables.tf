@@ -44,8 +44,4 @@ variable "jenkins_instance_profile_name" {
   default = "jenkins-profile"
 }
 
-# If Jenkins runs on EC2 inside your VPC, pass its security group id.
-variable "jenkins_security_group_id" {
-  type = string
-}
 

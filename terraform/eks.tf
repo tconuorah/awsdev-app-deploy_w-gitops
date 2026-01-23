@@ -27,7 +27,8 @@ resource "aws_security_group_rule" "eks_controlplane_allow_jenkins" {
   from_port                = 443
   to_port                  = 443
   protocol                 = "tcp"
-  source_security_group_id = var.jenkins_security_group_id
+  source_security_group_id = aws_security_group.jenkins_master.id
+
 
   description = "Allow Jenkins EC2 to reach EKS API server (443)"
 }
