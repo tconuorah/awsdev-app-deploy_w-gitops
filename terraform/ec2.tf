@@ -32,4 +32,24 @@ resource "aws_instance" "jenkins_master" {
   tags = {
     Name = "jenkins-master"
   }
+} 
+
+resource "aws_iam_role" "jenkins_ec2" {
+  name = var.jenkins_role_name
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = "sts:AssumeRole"
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_iam_instance_profile" "jenkins" {
+  name = var.jenkins_instance_profile_name
+  role = aws_iam_role.jenkins_ec2.name
 }
