@@ -59,6 +59,20 @@ resource "aws_iam_role" "jenkins_ec2" {
   })
 }
 
+resource "aws_iam_role_policy" "jenkins_eks_describe_cluster" {
+  name = "jenkins-eks-describe-cluster"
+  role = aws_iam_role.jenkins_ec2.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["eks:DescribeCluster"]
+      Resource = "arn:aws:eks:us-east-2:022440376442:cluster/eks-cluster"
+    }]
+  })
+}
+
 resource "aws_iam_instance_profile" "jenkins" {
   name = var.jenkins_instance_profile_name
   role = aws_iam_role.jenkins_ec2.name
