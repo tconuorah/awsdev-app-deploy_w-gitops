@@ -36,54 +36,14 @@ resource "aws_instance" "jenkins_master" {
   }
 }
 
-resource "aws_eks_access_entry" "jenkins" {
-  cluster_name  = aws_eks_cluster.main.name
-  principal_arn = aws_iam_role.jenkins_ec2.arn
-  type          = "STANDARD"
+resource "aws_security_group" "jenkins" {
+  name        = "${var.cluster_name}-jenkins-sg"
+  description = "Jenkins EC2 security group"
+  vpc_id      = var.vpc_id
 }
 
 
 
-resource "aws_iam_role" "jenkins_ec2" {
-  name = var.jenkins_role_name
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Action = "sts:AssumeRole"
-      Principal = {
-        Service = "ec2.amazonaws.com"
-      }
-    }]
-  })
-}
 
-resource "aws_iam_role_policy" "jenkins_eks_describe_cluster" {
-  name = "jenkins-eks-describe-cluster"
-  role = aws_iam_role.jenkins_ec2.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = ["eks:DescribeCluster"]
-      Resource = "arn:aws:eks:us-east-2:022440376442:cluster/eks-cluster"
-    }]
-  })
-}
-
-resource "aws_iam_instance_profile" "jenkins" {
-  name = var.jenkins_instance_profile_name
-  role = aws_iam_role.jenkins_ec2.name
-}
-
-resource "aws_iam_role_policy_attachment" "jenkins_ecr_power" {
-  role       = aws_iam_role.jenkins_ec2.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
-}
-resource "aws_iam_role_policy_attachment" "jenkins_eks_describe" {
-  role       = aws_iam_role.jenkins_ec2.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-}
 

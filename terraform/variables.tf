@@ -22,11 +22,6 @@ variable "node_group_name" {
   default     = "eks-node-group"
 }
 
-variable "node_name_pattern" {
-  description = "Pattern for naming EKS worker nodes"
-  type        = string
-  default     = "EKS-App-Worker Node"
-}
 
 variable "vpc_cidr" {
   type    = string
@@ -44,4 +39,25 @@ variable "jenkins_instance_profile_name" {
   default = "jenkins-profile"
 }
 
+
+variable "cluster_version" {
+  type    = string
+  default = "1.31"
+}
+
+variable "vpc_id" {
+  type = string
+  default = ""
+}
+
+variable "private_subnet_ids" {
+  description = "Private subnet IDs for EKS (subnet_ids in the module)"
+  type        = list(string)
+  default     = []
+}
+
+variable "tags" {
+  type    = map(string)
+  default = {}
+}
 

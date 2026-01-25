@@ -5,6 +5,6 @@ resource "null_resource" "helm_cleanup" {
   }
 
   depends_on = [
-    aws_eks_cluster.main
+    module.eks.cluster_name
   ]
 }

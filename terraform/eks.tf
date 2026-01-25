@@ -1,280 +1,37 @@
-# EKS Cluster
-resource "aws_eks_cluster" "main" {
-  name     = var.cluster_name
-  role_arn = aws_iam_role.eks_cluster.arn
-  version  = "1.31"
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "~> 20.0"
 
-  access_config {
-    authentication_mode                         = "API"
-    bootstrap_cluster_creator_admin_permissions = true
-  }
+  cluster_name    = var.cluster_name
+  cluster_version = var.cluster_version
 
-  vpc_config {
-    subnet_ids              = concat(aws_subnet.private[*].id, aws_subnet.public[*].id)
-    security_group_ids      = [aws_security_group.eks_cluster.id]
-    endpoint_private_access = true
-    endpoint_public_access  = true
-  }
+  vpc_id     = aws_vpc.main.id
+  subnet_ids = aws_subnet.private[*].id
 
-  depends_on = [
-    aws_iam_role_policy_attachment.eks_cluster_policy
-  ]
+  enable_irsa = true
 
-  tags = {
-    Name = var.cluster_name
-  }
-}
-
-resource "aws_security_group" "eks_cluster" {
-  name        = "eks-cluster-sg"
-  description = "Security group for EKS control plane"
-  vpc_id      = aws_vpc.main.id
-
-  ingress {
-    description     = "Allow Jenkins to reach EKS API"
-    from_port       = 443
-    to_port         = 443
-    protocol        = "tcp"
-    security_groups = [aws_security_group.jenkins_master.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = { Name = "eks-cluster-sg" }
-}
+  cluster_endpoint_public_access  = true
+  cluster_endpoint_private_access = true
 
 
-
-# Security Group for EKS Worker Nodes
-resource "aws_security_group" "eks_worker" {
-  name        = "eks-worker-sg"
-  description = "Security group for EKS worker nodes"
-  vpc_id      = aws_vpc.main.id
-
-  # Allow all traffic from the EKS cluster
-  ingress {
-    from_port       = 0
-    to_port         = 0
-    protocol        = "-1"
-    security_groups = [aws_security_group.eks_cluster.id]
-  }
-
-  # Allow node-to-node communication
-  ingress {
-    from_port = 0
-    to_port   = 0
-    protocol  = "-1"
-    self      = true
-  }
-
-  # Allow traffic from ALB
-  ingress {
-    from_port       = 0
-    to_port         = 0
-    protocol        = "-1"
-    security_groups = [aws_security_group.alb.id]
-  }
-
-  # Allow all outbound traffic
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "eks-worker-sg"
-  }
-}
-
-# Security Group for ALB
-resource "aws_security_group" "alb" {
-  name        = "eks-alb-sg"
-  description = "Security group for EKS ALB"
-  vpc_id      = aws_vpc.main.id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "eks-alb-sg"
-  }
-}
-
-# Launch Template for EKS nodes
-resource "aws_launch_template" "eks_nodes" {
-  name_prefix   = "eks-node-template-"
-  image_id      = "ami-07550b2762d546188" # Amazon EKS-optimized AMI for 1.31 in us-east-2
-  instance_type = "t3.medium"
-
-  block_device_mappings {
-    device_name = "/dev/xvda"
-    ebs {
-      volume_size = 20
-      volume_type = "gp3"
+  eks_managed_node_groups = {
+    worker-node = {
+      instance_types = ["t3.medium"]
+      min_size       = 2
+      max_size       = 4
+      desired_size   = 2
     }
   }
 
-  user_data = base64encode(<<-EOF
-#!/bin/bash
-set -ex
-
-# Get instance ID and use it to determine node number
-INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-NODE_NUMBER=$(echo $INSTANCE_ID | cut -d'-' -f2 | cut -c1)
-
-# Bootstrap the node with proper naming
-/etc/eks/bootstrap.sh eks-cluster \
-  --kubelet-extra-args '--node-labels=eks.amazonaws.com/nodegroup=eks-node-group,eks.amazonaws.com/nodegroup-image=ami-07550b2762d546188' \
-  --apiserver-endpoint '${aws_eks_cluster.main.endpoint}' \
-  --b64-cluster-ca '${aws_eks_cluster.main.certificate_authority[0].data}'
-
-# Set the node name
-hostnamectl set-hostname "Worker Node $NODE_NUMBER"
-EOF
-  )
-
-  tag_specifications {
-    resource_type = "instance"
-    tags = {
-      Name = "Worker Node 1"
-    }
-  }
-
-  vpc_security_group_ids = [aws_security_group.eks_worker.id]
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  depends_on = [
-    aws_iam_instance_profile.eks_node_group,
-    aws_security_group.eks_worker
-  ]
+  tags = var.tags
 }
 
-# IAM Instance Profile for EKS Node Group
-resource "aws_iam_instance_profile" "eks_node_group" {
-  name = "eks-node-group-profile"
-  role = aws_iam_role.eks_node_group.name
-}
-
-# EKS Node Group
-resource "aws_eks_node_group" "main" {
-  cluster_name    = aws_eks_cluster.main.name
-  node_group_name = "${var.cluster_name}-ng"
-  node_role_arn   = aws_iam_role.eks_node_group.arn
-  subnet_ids      = aws_subnet.private[*].id
-
-  scaling_config {
-    desired_size = 2
-    max_size     = 4
-    min_size     = 2
-  }
-
-  # Use CUSTOM AMI type since we're specifying an AMI in the launch template
-  ami_type      = "CUSTOM"
-  capacity_type = "ON_DEMAND"
-
-  # Use launch template
-  launch_template {
-    id      = aws_launch_template.eks_nodes.id
-    version = aws_launch_template.eks_nodes.latest_version
-  }
-
-  # Update strategy
-  update_config {
-    max_unavailable = 1
-  }
-
-  depends_on = [
-    aws_iam_role_policy_attachment.eks_worker_node_policy,
-    aws_iam_role_policy_attachment.eks_cni_policy,
-    aws_iam_role_policy_attachment.ecr_read_only
-  ]
-
-  tags = {
-    "k8s.io/cluster-autoscaler/enabled"                      = "true"
-    "k8s.io/cluster-autoscaler/${aws_eks_cluster.main.name}" = "owned"
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-
-# Application Load Balancer
-resource "aws_lb" "eks" {
-
-  name                       = "${var.cluster_name}-alb"
-  internal                   = false
-  load_balancer_type         = "application"
-  security_groups            = [aws_security_group.alb.id]
-  subnets                    = aws_subnet.public[*].id
-  enable_deletion_protection = false
-  idle_timeout               = 60
-
-  tags = {
-    Name = "eks-alb"
-  }
-}
-
-# Target Group for ALB
-resource "aws_lb_target_group" "eks" {
-  name        = "eks-tg"
-  port        = 80
-  protocol    = "HTTP"
-  vpc_id      = aws_vpc.main.id
-  target_type = "instance"
-
-  health_check {
-    path                = "/"
-    port                = "traffic-port"
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 5
-    interval            = 30
-    matcher             = "200-399"
-  }
-
-  tags = {
-    Name = "eks-tg"
-  }
-}
-
-# ALB Listener
-resource "aws_lb_listener" "eks" {
-  load_balancer_arn = aws_lb.eks.arn
-  port              = 80
-  protocol          = "HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.eks.arn
-  }
+resource "aws_security_group_rule" "jenkins_to_eks_api" {
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = module.eks.cluster_security_group_id
+  source_security_group_id = aws_security_group.jenkins_master.id
+  description              = "Allow Jenkins to reach EKS API"
 }
