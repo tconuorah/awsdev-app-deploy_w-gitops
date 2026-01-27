@@ -2,57 +2,57 @@ pipeline {
   agent any
 
   environment {
-    AWS_REGION = 'us-east-2'
-    ECR_REPO = '022440376442.dkr.ecr.us-east-2.amazonaws.com/aws-dev'
+    AWS_REGION   = 'us-east-2'
+    AWS_ACCOUNT  = '022440376442'
+    ECR_REGISTRY = "${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+    ECR_REPO     = "${ECR_REGISTRY}/aws-dev"
     CLUSTER_NAME = 'eks-cluster'
+    RELEASE_NAME = 'aws-dev'
+    IMAGE_TAG    = "${env.GIT_COMMIT}"
   }
 
   stages {
     stage('Checkout Code') {
-      steps {
-        checkout scm
-      }
+      steps { checkout scm }
     }
 
     stage('Build Docker Image') {
       steps {
         sh '''
-          docker build -t $ECR_REPO:latest ./app
+          docker build -t $ECR_REPO:$IMAGE_TAG -t $ECR_REPO:latest ./app
         '''
       }
     }
 
     stage('Push to ECR') {
       steps {
-        withAWS(region: "$AWS_REGION", credentials: 'aws-creds') {
-          sh '''
-            aws ecr get-login-password --region $AWS_REGION | \
-            docker login --username AWS --password-stdin $ECR_REPO
-            docker push $ECR_REPO:latest
-          '''
-        }
+        sh '''
+          aws sts get-caller-identity
+          aws ecr get-login-password --region $AWS_REGION | \
+          docker login --username AWS --password-stdin $ECR_REGISTRY
+
+          docker push $ECR_REPO:$IMAGE_TAG
+          docker push $ECR_REPO:latest
+        '''
       }
     }
 
     stage('Deploy to EKS') {
       steps {
-        withAWS(region: "$AWS_REGION", credentials: 'aws-creds') {
-          sh '''
-            aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
-            helm upgrade --install aws-dev ./helm/aws-dev \
-              --set image.repository=$ECR_REPO,image.tag=latest
-          '''
-        }
+        sh '''
+          aws sts get-caller-identity
+          aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+
+          helm upgrade --install $RELEASE_NAME ./helm/aws-dev \
+            --set image.repository=$ECR_REPO \
+            --set image.tag=$IMAGE_TAG
+        '''
       }
     }
   }
 
   post {
-    success {
-      echo "✅ Deployment successful!"
-    }
-    failure {
-      echo "❌ Deployment failed!"
-    }
+    success { echo "✅ Deployment successful!" }
+    failure { echo "❌ Deployment failed!" }
   }
 }
