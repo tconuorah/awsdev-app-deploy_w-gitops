@@ -5,7 +5,7 @@ pipeline {
     AWS_REGION   = 'us-east-2'
     AWS_ACCOUNT  = '942010118414'
     ECR_REGISTRY = "${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-    ECR_REPO     = "${ECR_REGISTRY}/aws-dev"
+    ECR_REPO     = "${ECR_REGISTRY}/dev-aws"
     CLUSTER_NAME = 'eks-cluster'
     RELEASE_NAME = 'dev-aws'
     IMAGE_TAG    = "latest"
