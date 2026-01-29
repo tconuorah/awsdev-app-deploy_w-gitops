@@ -43,7 +43,7 @@ pipeline {
           aws sts get-caller-identity
           aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
 
-          helm upgrade --install $RELEASE_NAME ./helm/aws-dev \
+          helm upgrade --install $RELEASE_NAME ./helm/dev-aws \
             --set image.repository=$ECR_REPO \
             --set image.tag=$IMAGE_TAG
         '''
