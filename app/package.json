@@ -1,0 +1,12 @@
+{
+  "name": "aws-devops-flask-ui",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Flask app with modern UI; Node not required but engine declared for environments that expect Node.",
+  "engines": {
+    "node": "16.x"
+  },
+  "scripts": {
+    "start": "echo \"This is a Python/Flask app. Use: python app.py\" && exit 0"
+  }
+}
