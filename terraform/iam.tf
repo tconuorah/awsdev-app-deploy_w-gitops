@@ -122,10 +122,11 @@ resource "aws_iam_role_policy" "jenkins_eks_describe_cluster" {
     Statement = [{
       Effect   = "Allow"
       Action   = ["eks:DescribeCluster"]
-      Resource = "arn:aws:eks:us-east-2:942010118414:cluster/eks-cluster"
+      Resource = module.eks.cluster_arn
     }]
   })
 }
+
 
 resource "aws_eks_access_policy_association" "jenkins_admin" {
   cluster_name  = module.eks.cluster_name
