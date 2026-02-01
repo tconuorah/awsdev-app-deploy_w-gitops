@@ -147,7 +147,7 @@ data "aws_iam_policy_document" "ecr_actions" {
     sid       = "ECRAuthToken"
     effect    = "Allow"
     actions   = ["ecr:GetAuthorizationToken"]
-    resources = [aws_ecr_repository.app.arn]
+    resources = ["*"]
   }
 
   statement {
