@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: awsdev-app
+  name: aws-dev
   namespace: argocd
 spec:
   project: default
@@ -16,11 +16,12 @@ spec:
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: awsdev-app
+    namespace: aws-dev
+    
 
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
-      - CreateNamespace=false
+      - CreateNamespace=true
