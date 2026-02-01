@@ -21,6 +21,10 @@ variable "cluster_version" {
   default = "1.31"
 }
 
+variable "admin_principal_arn" {
+  type = string
+  default = "arn:aws:iam::022440376442:user/Terrence"
+}
 
 variable "node_group_name" {
   description = "Name of the EKS node group"

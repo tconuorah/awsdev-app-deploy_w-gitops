@@ -7,7 +7,7 @@ spec:
   project: default
 
   source:
-    repoURL: https://github.com/tconuorah/eks-awsdev-app-deploy
+    repoURL: https://github.com/tconuorah/awsdev-app-deploy_w-gitops
     targetRevision: gitops
     path: helm/aws-dev
     helm:
