@@ -98,7 +98,7 @@ resource "aws_security_group" "alb" {
 # Launch Template for EKS nodes
 resource "aws_launch_template" "eks_nodes" {
   name_prefix   = "eks-node-template-"
-  image_id      = "ami-07550b2762d546188"  # Amazon EKS-optimized AMI for 1.31 in us-east-2
+  image_id      = "ami-07550b2762d546188" # Amazon EKS-optimized AMI for 1.31 in us-east-2
   instance_type = "t3.medium"
 
   block_device_mappings {
@@ -167,8 +167,8 @@ resource "aws_eks_node_group" "main" {
   }
 
   # Use CUSTOM AMI type since we're specifying an AMI in the launch template
-  ami_type       = "CUSTOM"
-  capacity_type  = "ON_DEMAND"
+  ami_type      = "CUSTOM"
+  capacity_type = "ON_DEMAND"
 
   # Use launch template
   launch_template {
@@ -188,7 +188,7 @@ resource "aws_eks_node_group" "main" {
   ]
 
   tags = {
-    "k8s.io/cluster-autoscaler/enabled" = "true"
+    "k8s.io/cluster-autoscaler/enabled"                      = "true"
     "k8s.io/cluster-autoscaler/${aws_eks_cluster.main.name}" = "owned"
   }
 
@@ -197,50 +197,3 @@ resource "aws_eks_node_group" "main" {
   }
 }
 
-# Application Load Balancer
-resource "aws_lb" "eks" {
-  name               = "${var.cluster_name}-alb"
-  internal           = false
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb.id]
-  subnets            = aws_subnet.public[*].id
-  enable_deletion_protection = false
-  idle_timeout = 60
-
-  tags = {
-    Name = "eks-alb"
-  }
-}
-
-# Target Group for ALB
-resource "aws_lb_target_group" "eks" {
-  name     = "eks-tg"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.main.id
-
-  health_check {
-    path                = "/"
-    port                = "traffic-port"
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 5
-    interval            = 30
-  }
-
-  tags = {
-    Name = "eks-tg"
-  }
-}
-
-# ALB Listener
-resource "aws_lb_listener" "eks" {
-  load_balancer_arn = aws_lb.eks.arn
-  port              = 80
-  protocol          = "HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.eks.arn
-  }
-} 

@@ -17,7 +17,7 @@ resource "aws_subnet" "public" {
   availability_zone = data.aws_availability_zones.available.names[count.index]
 
   tags = {
-    Name = "public-subnet-${count.index + 1}"
+    Name                     = "public-subnet-${count.index + 1}"
     "kubernetes.io/role/elb" = "1"
   }
 }
@@ -30,7 +30,7 @@ resource "aws_subnet" "private" {
   availability_zone = data.aws_availability_zones.available.names[count.index]
 
   tags = {
-    Name = "private-subnet-${count.index + 1}"
+    Name                              = "private-subnet-${count.index + 1}"
     "kubernetes.io/role/internal-elb" = "1"
   }
 }
@@ -38,7 +38,7 @@ resource "aws_subnet" "private" {
 # Internet Gateway
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
-  tags = { Name = "${var.cluster_name}-igw" }
+  tags   = { Name = "${var.cluster_name}-igw" }
 
   # helps when something re-creates dependencies, ensures proper wait
   lifecycle {
@@ -64,7 +64,7 @@ resource "aws_nat_gateway" "main" {
   lifecycle {
     create_before_destroy = true
   }
-  depends_on = [ aws_internet_gateway.igw ]
+  depends_on = [aws_internet_gateway.igw]
 }
 
 # Route Tables
