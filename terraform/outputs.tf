@@ -3,7 +3,7 @@ output "ecr" {
 }
 
 output "eks_cluster_name" {
-  value = aws_eks_cluster.main.name
+  value = module.eks.cluster_name
 }
 
 output "github_actions_role_arn" {

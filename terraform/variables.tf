@@ -16,6 +16,12 @@ variable "cluster_name" {
   default     = "eks-cluster"
 }
 
+variable "cluster_version" {
+  type    = string
+  default = "1.31"
+}
+
+
 variable "node_group_name" {
   description = "Name of the EKS node group"
   type        = string
@@ -34,16 +40,21 @@ variable "vpc_cidr" {
 
 }
 
+variable "tags" {
+  type    = map(string)
+  default = {}
+}
+
 variable "github_org" {
   type        = string
   description = "github org/username"
-  default = "tconuorah"
+  default     = "tconuorah"
 }
 
 variable "github_repo" {
   type        = string
   description = "github repo name"
-  default = "awsdev-app-deploy_w-gitops"
+  default     = "awsdev-app-deploy_w-gitops"
 }
 
 variable "github_branch" {
